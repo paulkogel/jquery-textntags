@@ -39,7 +39,7 @@
             tagHighlight      : ''
         }
     };
-    
+
     function transformObjectPropertiesFn(keys_map) {
         return function (obj, localToPublic) {
             var new_obj = {};
@@ -52,7 +52,7 @@
         };
     }
     var transformObjectProperties = _.memoize(transformObjectPropertiesFn);
-    
+
     var utils = {
         htmlEncode: function (str) {
             return _.escape(str);
@@ -78,7 +78,7 @@
             }
         }
     };
-    
+
     var TextNTags = function (editor) {
         var settings = null, templates;
         var elContainer, elEditor, elBeautifier, elTagList, elTagListItemActive;
@@ -86,24 +86,24 @@
         var currentTriggerChar, currentDataQuery;
         var editorSelectionLength = 0, editorTextLength = 0, editorKeyCode = 0, editorAddingTag = false;
         var editorInPasteMode = false, editorPasteStartPosition = 0, editorPasteCutCharacters = 0;
-        
+
         function setSettings (options) {
             if (settings != null) {
                 return false;
             }
-            
+
             settings = $.extend(true, {}, defaultSettings, options);
             delete settings.triggers[''];
             _.each(settings.triggers, function (val, key) {
                 settings.triggers[key] = $.extend(true, {}, trigger_defaults, val);
                 settings.triggers[key].finder = new RegExp(key + '\\w+(\\s+\\w+)?\\s?$', 'gi');
             });
-            
+
             templates = settings.templates;
-            
+
             return true;
         }
-        
+
         function initTextarea () {
             elEditor = $(editor).bind({
                 click:    onEditorClick,
@@ -115,7 +115,7 @@
             });
 
             elContainer = elEditor.wrapAll($(templates.wrapper())).parent();
-            
+
             if (settings.realValOnSubmit) {
                 elEditor.closest('form').bind('submit.textntags', function (event) {
                     elContainer.css('visibility', 'hidden');
@@ -123,34 +123,34 @@
                 });
             }
         }
-        
+
         function initTagList () {
             elTagList = $(templates.tagList());
             elTagList.appendTo(elContainer);
             elTagList.delegate('li', 'click', onTagListItemClick);
         }
-        
+
         function initBeautifier () {
             elBeautifier = $(templates.beautifier());
             elBeautifier.prependTo(elContainer);
         }
-        
+
         function initState () {
             var text_with_tags = getEditorValue(), initialState = parseTaggedText(text_with_tags);
             tagsCollection = initialState.tagsCollection;
             elEditor.val(initialState.plain_text);
             updateBeautifier();
-            
+
             if (tagsCollection.length > 0) {
                 var addedTags = _.uniq(_.map(tagsCollection, function (tagPos) { return tagPos[3]; }));
                 elEditor.trigger('tagsAdded.textntags', [addedTags]);
             }
         }
-        
+
         function getEditorValue () {
             return elEditor.val();
         }
-        
+
         function getBeautifiedText (tagged_text) {
             var beautified_text = tagged_text || getTaggedText();
 
@@ -158,12 +158,12 @@
                 var markup = templates.tagHighlight({idx: trigger.parserGroups.title, class_name: trigger.classes.tagHighlight});
                 beautified_text = beautified_text.replace(trigger.parser, markup);
             });
-            
+
             beautified_text = beautified_text.replace(/\n/g, '<br />&shy;');
             beautified_text = beautified_text.replace(/ {2}/g, ' &nbsp;') + '&shy;';
             return beautified_text;
         }
-        
+
         function getTaggedText() {
             var plain_text = getEditorValue(),
                 position = 0, tagged_text, triggers = settings.triggers;
@@ -173,21 +173,21 @@
                     diff_text = diff_pos > 0 ? plain_text.substr(position, diff_pos) : '',
                     objPropTransformer = transformObjectProperties(triggers[tagPos[2]].keys_map),
                     tagText = triggers[tagPos[2]].syntax(objPropTransformer(tagPos[3], false));
-                
+
                 position = tagPos[0] + tagPos[1];
                 return diff_text + tagText;
             });
-            
+
             return tagged_text.join('') + plain_text.substr(position);
         }
-        
+
         // it's ready for export
         function parseTaggedText (tagged_text) {
             if (_.isString(tagged_text) == false) {
                 return null;
-            } 
+            }
             var plain_text = '' + tagged_text, tagsColl = [], triggers = settings.triggers;
-            
+
             _.each(triggers, function (opts, tchar) {
                 var parts = tagged_text.split(opts.parser),
                     idx = 0, pos = 0, len = parts.length,
@@ -213,28 +213,28 @@
                     pos += part_len;
                 }
             });
-            
+
             tagsColl = _.sortBy(tagsColl, function (tagPos) { return tagPos[0]; });
-            
+
             _.each(triggers, function (opts, tchar) {
                 plain_text = plain_text.replace(opts.parser, '$' + opts.parserGroups.title);
             });
-            
+
             return {
                 plain_text: plain_text,
                 tagged_text: tagged_text,
                 tagsCollection: tagsColl
             };
         }
-        
+
         function updateBeautifier () {
             elBeautifier.find('div').html(getBeautifiedText());
             elEditor.css('height', elBeautifier.outerHeight() + 'px');
         }
-        
+
         function checkForTrigger(look_ahead) {
             look_ahead = look_ahead || 0;
-            
+
             var selectionStartFix = $.browser.webkit ? 0 : -1,
                 sStart = elEditor[0].selectionStart + selectionStartFix,
                 left_text = elEditor.val().substr(0, sStart + look_ahead),
@@ -243,7 +243,7 @@
             if (!left_text || !left_text.length) {
                 return;
             }
-            
+
             found_trigger = _.find(settings.triggers, function (trigger, tchar) {
                 var matches = left_text.match(trigger.finder);
                 if (matches) {
@@ -262,17 +262,17 @@
                 _.defer(_.bind(searchTags, this, currentDataQuery, found_trigger_char));
             }
         }
-        
+
         function onEditorClick (e) {
             checkForTrigger(0);
         }
-        
+
         function onEditorKeyDown (e) {
             var keys = KEY, // store in local var for faster lookup
                 sStart = elEditor[0].selectionStart,
                 sEnd = elEditor[0].selectionEnd,
                 plain_text = elEditor.val();
-            
+
             editorSelectionLength = sEnd - sStart;
             editorTextLength = plain_text.length;
             editorKeyCode = e.keyCode;
@@ -283,7 +283,7 @@
                     if (!elTagList.is(':visible')) {
                         return true;
                     }
-                    
+
                     var elCurrentTagListItem = null;
                     if (e.keyCode == keys.DOWN) {
                         if (elTagListItemActive && elTagListItemActive.length) {
@@ -347,7 +347,7 @@
 
             return true;
         }
-        
+
         function onEditorKeyPress (e) {
             if (e.keyCode == KEY.RETURN) {
                 updateBeautifier(elEditor.val());
@@ -375,7 +375,7 @@
                 updateBeautifier();
             }
         }
-        
+
         function onEditorInput (e) {
             var selectionStartFix = $.browser.webkit ? 0 : -1;
             if (editorKeyCode != KEY.BACKSPACE && editorKeyCode != KEY['DELETE']) {
@@ -402,26 +402,26 @@
                     }
                 }
             }
-            
+
             updateBeautifier();
-            
+
             checkForTrigger(1);
         }
-        
+
         function onEditorBlur (e) {
             _.delay(hideTagList, 100);
         }
-        
+
         function hideTagList () {
             elTagListItemActive = null;
             elTagList.hide().empty();
         }
-        
+
         function onTagListItemClick (e) {
             addTag($(this).data('tag'));
             return false;
         }
-        
+
         function removeTagsInRange (start, end) {
             var removedTags = [];
             tagsCollection = _.filter(tagsCollection, function (tagPos) {
@@ -432,12 +432,12 @@
                 }
                 return !inRange;
             });
-            
+
             if (removedTags.length > 0) {
                 elEditor.trigger('tagsRemoved.textntags', [removedTags]);
             }
         }
-        
+
         function shiftTagsPosition (afterPosition, position_shift) {
             tagsCollection = _.map(tagsCollection, function (tagPos) {
                 if (tagPos[0] >= afterPosition) {
@@ -446,7 +446,7 @@
                 return tagPos;
             });
         }
-        
+
         function addTag (tag) {
             var trigger = settings.triggers[currentTriggerChar],
                 objPropTransformer = transformObjectProperties(trigger.keys_map),
@@ -464,23 +464,23 @@
 
             // explicitly convert to string for comparisons later
             tag[trigger.keys_map.id] = '' + tag[trigger.keys_map.id];
-            
+
             tagsCollection.push([tagStart, localTag.title.length, currentTriggerChar, tag]);
             tagsCollection = _.sortBy(tagsCollection, function (t) { return t[0]; });
-            
+
             currentTriggerChar = '';
             currentDataQuery = '';
             hideTagList();
-            
+
             elEditor.val(new_text);
             updateBeautifier();
 
             elEditor.focus();
             utils.setCaratPosition(elEditor[0], newCaretPosition);
-            
+
             elEditor.trigger('tagsAdded.textntags', [[tag]]);
         }
-        
+
         function selectTagListItem (tagItem, class_name) {
             if (tagItem && tagItem.length) {
                 tagItem.addClass(class_name);
@@ -491,10 +491,10 @@
                 elTagListItemActive = null;
             }
         }
-        
+
         function populateTagList (query, triggerChar, results) {
             var trigger = settings.triggers[triggerChar];
-            
+
             if (trigger.uniqueTags) {
                 // Filter items that has already been mentioned
                 var id_key = trigger.keys_map.id, tagIds = _.map(tagsCollection, function (tagPos) { return tagPos[3][id_key]; });
@@ -521,21 +521,27 @@
                 }
                 tagItem.appendTo(tagsDropDown);
 
-                if (index === 0) { 
+                if (index === 0) {
                     selectTagListItem(tagItem, trigger.classes.tagActiveDropDown);
+                }
+
+                // exact match
+                if (tag.name.toLowerCase() === (triggerChar + query.toLowerCase())) {
+                    selectTagListItem(tagItem, trigger.classes.tagActiveDropDown);
+                    addTag(tagItem.data('tag'));
                 }
             });
 
             elTagList.show();
         }
-        
+
         function searchTags (query, triggerChar) {
             hideTagList();
             settings.onDataRequest.call(this, 'search', query, triggerChar, function (responseData) {
                 populateTagList(query, triggerChar, responseData);
             });
         }
-        
+
         // Public methods
         return {
             init : function (options) {
@@ -587,7 +593,7 @@
                     return;
                 }
 				var fbTagsCollection = {}, triggers = settings.triggers;
-					
+
 				_.each(tagsCollection, function (tagPos) {
 					var objPropTransformer = transformObjectProperties(triggers[tagPos[2]].keys_map),
 						localTag = objPropTransformer(tagPos[3], false);
@@ -606,12 +612,12 @@
                 if (!_.isFunction(callback)) {
                     return;
                 }
-                
+
                 callback.call(this, parseTaggedText(tagged_text));
             }
         };
     };
-    
+
     $.fn.textntags = function (methodOrSettings) {
         var outerArguments = arguments;
 
